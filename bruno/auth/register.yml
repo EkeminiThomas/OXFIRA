@@ -1,0 +1,32 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/register"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{testEmail}}",
+        "password": "{{testPassword}}",
+        "displayName": "Test User"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.body.data && res.body.data.accessToken) {
+          bru.setEnvVar("accessToken", res.body.data.accessToken);
+          bru.setEnvVar("refreshToken", res.body.data.refreshToken);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
