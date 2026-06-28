@@ -1,0 +1,21 @@
+info:
+  name: Request Password Reset
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/reset-password"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{testEmail}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
