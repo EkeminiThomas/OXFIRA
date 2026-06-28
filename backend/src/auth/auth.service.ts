@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
@@ -9,12 +9,15 @@ import { VerificationTokenType } from '../../generated/prisma/enums';
 import ms from 'ms';
 import { env } from '../config/env';
 import { LoginDto } from './dto/login.dto';
+import { REDIS_CLIENT } from '../redis/redis.module';
+import type Redis from 'ioredis';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis
   ) {}
 
   async register(dto: RegisterDto) {
@@ -96,39 +99,43 @@ export class AuthService {
   }
 
   async refreshToken(refreshTokenValue: string) {
-    const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshTokenValue },
-      include: { user: true },
-    });
+    const key = `refresh:${refreshTokenValue}`;
+    const stored = await this.redis.get(key);
 
-    if (!stored || stored.expiresAt < new Date()) {
+    if (!stored) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
+    const { userId, email } = JSON.parse(stored) as { userId: string; email: string };
+
+    await this.redis.del(key);
+
     const accessToken = this.jwtService.sign(
-      { sub: stored.user.id, email: stored.user.email },
+      { sub: userId, email: email },
       { expiresIn: env.JWT_ACCESS_EXPIRY },
     );
     const newRefreshTokenValue = randomBytes(40).toString('hex');
 
-    await this.prisma.$transaction([
-      this.prisma.refreshToken.delete({ where: { id: stored.id } }),
-      this.prisma.refreshToken.create({
-        data: {
-          token: newRefreshTokenValue,
-          userId: stored.user.id,
-          expiresAt: new Date(Date.now() + ms(env.JWT_REFRESH_EXPIRY)),
-        },
-      }),
-    ]);
+    await this.redis.set(
+      `refresh:${newRefreshTokenValue}`,
+      JSON.stringify({ userId, email }),
+      'EX',
+      Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
+    );
 
     return { accessToken, refreshToken: newRefreshTokenValue };
   }
 
   async logout(userId: string, refreshTokenValue: string) {
-    await this.prisma.refreshToken.deleteMany({
-      where: { token: refreshTokenValue, userId },
-    });
+    const key = `refresh:${refreshTokenValue}`;
+    const stored = await this.redis.get(key);
+
+    if (stored) {
+      const parsed = JSON.parse(stored) as { userId: string };
+      if (parsed.userId === userId) {
+        await this.redis.del(key);
+      }
+    }
   }
 
   async verifyEmail(token: string) {
@@ -189,8 +196,16 @@ export class AuthService {
         data: { passwordHash },
       }),
       this.prisma.verificationToken.delete({ where: { id: stored.id } }),
-      this.prisma.refreshToken.deleteMany({ where: { userId: stored.userId } }),
     ]);
+
+    // refresh tokens now live in Redis
+    const keys = await this.redis.keys('refresh:*');
+    for (const key of keys) {
+      const val = await this.redis.get(key);
+      if (val && JSON.parse(val).userId === stored.userId) {
+        await this.redis.del(key);
+      }
+    }
   }
 
   async getProfile(userId: string) {
@@ -219,13 +234,12 @@ export class AuthService {
     );
 
     const refreshTokenValue = randomBytes(40).toString('hex');
-    await this.prisma.refreshToken.create({
-      data: {
-        token: refreshTokenValue,
-        userId,
-        expiresAt: new Date(Date.now() + ms(env.JWT_REFRESH_EXPIRY)),
-      },
-    });
+    await this.redis.set(
+      `refresh:${refreshTokenValue}`,
+      JSON.stringify({ userId, email }),
+      'EX',
+      Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
+    );
 
     return { accessToken, refreshToken: refreshTokenValue };
   }

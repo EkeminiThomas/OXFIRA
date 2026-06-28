@@ -6,6 +6,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
+  REDIS_URL: z.url().default('redis://localhost:6379'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
   JWT_ACCESS_EXPIRY: z.string().default('15m').transform((val) => val as StringValue),
   JWT_REFRESH_EXPIRY: z.string().default('7d').transform((val) => val as StringValue),
