@@ -14,4 +14,9 @@ export class AppController {
   getError(): string {
     return this.appService.getError();
   }
+
+  @Get('count')
+  async getCount(): Promise<number> {
+    return this.appService.getCount();
+  }
 }
