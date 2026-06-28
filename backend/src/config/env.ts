@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { StringValue } from 'ms';
 import z from 'zod';
 
 const envSchema = z.object({
@@ -6,9 +7,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
-  JWT_ACCESS_EXPIRY: z.string().default('15m'),
-  JWT_REFRESH_EXPIRY: z.string().default('7d'),
-  CORS_ORIGINS: z.string()
+  JWT_ACCESS_EXPIRY: z.string().default('15m').transform((val) => val as StringValue),
+  JWT_REFRESH_EXPIRY: z.string().default('7d').transform((val) => val as StringValue),
+  CORS_ORIGINS: z
+    .string()
     .default('http://localhost:3000,http://localhost:3001')
     .transform((val) => val.split(',').map((origin) => origin.trim())),
 });
