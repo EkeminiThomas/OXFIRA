@@ -38,7 +38,7 @@ const Header = () => {
 
             <div className="hidden md:flex items-center gap-2.5">
                 <Link href='/login'>
-                    <button className="flex-1 px-4 py-2 text-sm  bg-transparent cursor-pointer">
+                    <button className="flex-1 px-4 py-2 text-sm text-text-hue bg-transparent cursor-pointer">
                         Sign in
                     </button>
                 </Link>

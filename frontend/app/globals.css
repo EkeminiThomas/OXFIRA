@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --background-image-corner-gradient: radial-gradient(
+    circle at top left,
+    #5779E5 0%,
+    #2D57DE 40%,
+    #1B3485 70%,
+    #122359 100%
+  );
 
   /* ── Oxfira palette ── */
 
