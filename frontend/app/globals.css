@@ -25,6 +25,7 @@
   /* 30% — Deep navy (text, footer, contrast bands) */
   --color-navy-950: #050916;
   --color-navy-900: #09112c;
+  --color-text-hue:#000789;
 
   /* 10% — Blue accent (buttons, links, highlights only) */
   --color-blue-brand: #1b3485;

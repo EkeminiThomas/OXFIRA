@@ -10,7 +10,7 @@ import {
 
 const platforms = [
     { name: "Instagram", icon: <RiInstagramLine size={18} /> },
-    { name: "X / Twitter", icon: <RiTwitterXLine size={16} /> },
+    { name: "X / Twitter", icon: <RiTwitterXLine size={16} /> },    
     { name: "LinkedIn", icon: <RiLinkedinLine size={17} /> },
     { name: "TikTok", icon: <RiTiktokLine size={16} /> },
     { name: "Facebook", icon: <RiFacebookLine size={17} /> },
@@ -19,7 +19,7 @@ const platforms = [
 export default function Hero() {
     return (
         <section className="relative text-center px-6 pt-24 pb-20 overflow-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-100 rounded-full bg-[radial-gradient(ellipse,rgba(9,17,44,0.07)_0%,transparent_70%)] pointer-events-none" />
+          
 
             <div className="inline-flex items-center gap-2 bg-white/70 border border-gray-300 rounded-full px-4 py-1.5 text-[13px] text-navy-900/70 mb-6">
                 <RiStarLine size={13} className="text-blue-brand" />
