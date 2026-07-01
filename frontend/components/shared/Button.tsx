@@ -1,15 +1,21 @@
+import { cn } from "@/app/lib/utils";
+
+
 interface ButtonProps {
     text: string;
     onClick?: () => void;
-    icon?: React.ReactNode
+    icon?: React.ReactNode;
+
+    className?: string;
 
 }
 
-export default function Button({ text, onClick, icon }: ButtonProps) {
+export default function Button({ text, onClick, icon, className }: ButtonProps) {
     return (
-        <div onClick={onClick} className="bg-blue-900 flex px-8 py-3 text-xl rounded-3xl mx-6 cursor-pointer   ">
+        <div onClick={onClick} className={cn("bg-text-hue flex px-8 py-3 text-xl text-white rounded-3xl mx-6 cursor-pointer", className)} >
             {text}
             {icon}
         </div>
     )
 }
+

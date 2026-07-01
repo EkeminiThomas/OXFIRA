@@ -15,7 +15,7 @@ const Header = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     return (
         <nav className="sticky top-0 z-50 flex items-center justify-between h-16 px-6 md:px-10 border-b backdrop-blur-md">
-            <a href="#" className="flex items-center gap-2.5 text-navy-950 no-underline">
+            <a href="#" className="flex items-center gap-2.5  no-underline">
                 <Image
                     src='/oxifraLogo.svg'
                     width={40}
