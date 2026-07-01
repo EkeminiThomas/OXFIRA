@@ -80,7 +80,7 @@ export default function Features() {
                     <Button
                         text='Learn More'
                         className='rounded-lg outline bg-white text-zinc-500 w-full sm:w-48 my-5'
-                        icon={<FaGreaterThan size={16} className="mt-0.5 ml-2" />}
+                        icon={<FaGreaterThan size={16} className="mt-1.5 ml-2" />}
                     />
                 </div>
                 {/* placeholder for image/content */}
