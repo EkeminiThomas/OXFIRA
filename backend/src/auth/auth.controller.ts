@@ -6,6 +6,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -42,9 +43,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(
     @CurrentUser('id') userId: string,
+    @Headers('authorization') authHeader: string,
     @Body() dto: RefreshTokenDto,
   ) {
-    await this.authService.logout(userId, dto.refreshToken);
+    const accessToken = authHeader.replace('Bearer ', '');
+    await this.authService.logout(accessToken, userId, dto.refreshToken);
   }
 
   @Post('verify-email')

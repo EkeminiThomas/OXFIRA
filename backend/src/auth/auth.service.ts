@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import ms from 'ms';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenStore } from '../redis/refresh-token.store';
 import { env } from '../config/env';
 import { VerificationTokenType } from '../../generated/prisma/enums';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { DecodedJwtPayload, JwtPayload } from './interfaces/jwt-payload.interface';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -16,6 +16,7 @@ import {
   UnauthorizedException,
   ValidationException,
 } from '../common/errors/exceptions';
+import { AccessTokenBlacklistStore } from '../redis/access-token-blacklist.store';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenStore: RefreshTokenStore,
+    private readonly blacklistStore: AccessTokenBlacklistStore,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -112,26 +114,23 @@ export class AuthService {
 
     await this.refreshTokenStore.delete(refreshTokenValue);
 
-    const payload: JwtPayload = { sub: stored.userId, email: stored.email };
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: env.JWT_ACCESS_EXPIRY,
-    });
-
-    const newRefreshTokenValue = randomBytes(40).toString('hex');
-    await this.refreshTokenStore.set(
-      newRefreshTokenValue,
-      { userId: stored.userId, email: stored.email },
-      Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
-    );
+    const { accessToken, refreshToken: newRefreshTokenValue } =
+      await this.generateTokens(stored.userId, stored.email);
 
     return { accessToken, refreshToken: newRefreshTokenValue };
   }
 
-  async logout(userId: string, refreshTokenValue: string) {
+  async logout(accessToken: string, userId: string, refreshTokenValue: string) {
     const stored = await this.refreshTokenStore.get(refreshTokenValue);
 
     if (stored && stored.userId === userId) {
       await this.refreshTokenStore.delete(refreshTokenValue);
+    }
+
+    const decoded = this.jwtService.decode(accessToken) as DecodedJwtPayload | null;
+    if (decoded?.jti && decoded?.exp) {
+      const ttlSeconds = decoded.exp - Math.floor(Date.now() / 1000);
+      await this.blacklistStore.blacklist(decoded.jti, ttlSeconds);
     }
   }
 
@@ -218,7 +217,7 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, email: string) {
-    const payload: JwtPayload = { sub: userId, email };
+    const payload: JwtPayload = { sub: userId, email, jti: randomUUID() };
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: env.JWT_ACCESS_EXPIRY,
     });
