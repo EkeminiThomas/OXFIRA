@@ -1,23 +1,28 @@
-import * as bcrypt from 'bcrypt';
-import { Inject, Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterDto } from './dto/register.dto';
-import { ConflictException, NotFoundException, UnauthorizedException, ValidationException } from '../common/errors/exceptions';
+import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { VerificationTokenType } from '../../generated/prisma/enums';
 import ms from 'ms';
+import { PrismaService } from '../prisma/prisma.service';
+import { RefreshTokenStore } from '../redis/refresh-token.store';
 import { env } from '../config/env';
+import { VerificationTokenType } from '../../generated/prisma/enums';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { REDIS_CLIENT } from '../redis/redis.module';
-import type Redis from 'ioredis';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  ValidationException,
+} from '../common/errors/exceptions';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    private readonly refreshTokenStore: RefreshTokenStore,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -99,27 +104,23 @@ export class AuthService {
   }
 
   async refreshToken(refreshTokenValue: string) {
-    const key = `refresh:${refreshTokenValue}`;
-    const stored = await this.redis.get(key);
+    const stored = await this.refreshTokenStore.get(refreshTokenValue);
 
     if (!stored) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const { userId, email } = JSON.parse(stored) as { userId: string; email: string };
+    await this.refreshTokenStore.delete(refreshTokenValue);
 
-    await this.redis.del(key);
+    const payload: JwtPayload = { sub: stored.userId, email: stored.email };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: env.JWT_ACCESS_EXPIRY,
+    });
 
-    const accessToken = this.jwtService.sign(
-      { sub: userId, email: email },
-      { expiresIn: env.JWT_ACCESS_EXPIRY },
-    );
     const newRefreshTokenValue = randomBytes(40).toString('hex');
-
-    await this.redis.set(
-      `refresh:${newRefreshTokenValue}`,
-      JSON.stringify({ userId, email }),
-      'EX',
+    await this.refreshTokenStore.set(
+      newRefreshTokenValue,
+      { userId: stored.userId, email: stored.email },
       Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
     );
 
@@ -127,14 +128,10 @@ export class AuthService {
   }
 
   async logout(userId: string, refreshTokenValue: string) {
-    const key = `refresh:${refreshTokenValue}`;
-    const stored = await this.redis.get(key);
+    const stored = await this.refreshTokenStore.get(refreshTokenValue);
 
-    if (stored) {
-      const parsed = JSON.parse(stored) as { userId: string };
-      if (parsed.userId === userId) {
-        await this.redis.del(key);
-      }
+    if (stored && stored.userId === userId) {
+      await this.refreshTokenStore.delete(refreshTokenValue);
     }
   }
 
@@ -198,14 +195,7 @@ export class AuthService {
       this.prisma.verificationToken.delete({ where: { id: stored.id } }),
     ]);
 
-    // refresh tokens now live in Redis
-    const keys = await this.redis.keys('refresh:*');
-    for (const key of keys) {
-      const val = await this.redis.get(key);
-      if (val && JSON.parse(val).userId === stored.userId) {
-        await this.redis.del(key);
-      }
-    }
+    await this.refreshTokenStore.deleteAllForUser(stored.userId);
   }
 
   async getProfile(userId: string) {
@@ -228,16 +218,15 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, email: string) {
-    const accessToken = this.jwtService.sign(
-      { sub: userId, email },
-      { expiresIn: env.JWT_ACCESS_EXPIRY },
-    );
+    const payload: JwtPayload = { sub: userId, email };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: env.JWT_ACCESS_EXPIRY,
+    });
 
     const refreshTokenValue = randomBytes(40).toString('hex');
-    await this.redis.set(
-      `refresh:${refreshTokenValue}`,
-      JSON.stringify({ userId, email }),
-      'EX',
+    await this.refreshTokenStore.set(
+      refreshTokenValue,
+      { userId, email },
       Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
     );
 

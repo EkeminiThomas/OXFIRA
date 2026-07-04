@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import Redis from 'ioredis';
 import { env } from '../config/env';
-
-export const REDIS_CLIENT = 'REDIS_CLIENT';
+import { RefreshTokenStore } from './refresh-token.store';
+import { REDIS_CLIENT } from './redis.constants';
 
 @Global()
 @Module({
@@ -11,7 +11,8 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
       provide: REDIS_CLIENT,
       useFactory: () => new Redis(env.REDIS_URL),
     },
+    RefreshTokenStore,
   ],
-  exports: [REDIS_CLIENT],
+  exports: [REDIS_CLIENT, RefreshTokenStore],
 })
 export class RedisModule {}
