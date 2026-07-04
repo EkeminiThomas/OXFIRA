@@ -4,15 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { env } from '../../config/env';
 import { UnauthorizedException } from '../../common/errors/exceptions';
+import { DecodedJwtPayload } from '../interfaces/jwt-payload.interface';
+import { AccessTokenBlacklistStore } from '../../redis/access-token-blacklist.store';
 
-interface JwtPayload {
-  sub: string;
-  email: string;
-}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly blacklistStore: AccessTokenBlacklistStore,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -20,7 +21,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: DecodedJwtPayload) {
+    const isBlacklisted = await this.blacklistStore.isBlacklisted(payload.jti);
+    if (isBlacklisted) {
+      throw new UnauthorizedException('Token has been revoked');
+    }
+    
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, email: true, displayName: true, isVerified: true },
