@@ -1,20 +1,28 @@
-import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterDto } from './dto/register.dto';
-import { ConflictException, NotFoundException, UnauthorizedException, ValidationException } from '../common/errors/exceptions';
+import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { VerificationTokenType } from '../../generated/prisma/enums';
 import ms from 'ms';
+import { PrismaService } from '../prisma/prisma.service';
+import { RefreshTokenStore } from '../redis/refresh-token.store';
 import { env } from '../config/env';
+import { VerificationTokenType } from '../../generated/prisma/enums';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  ValidationException,
+} from '../common/errors/exceptions';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly refreshTokenStore: RefreshTokenStore,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -96,39 +104,35 @@ export class AuthService {
   }
 
   async refreshToken(refreshTokenValue: string) {
-    const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshTokenValue },
-      include: { user: true },
-    });
+    const stored = await this.refreshTokenStore.get(refreshTokenValue);
 
-    if (!stored || stored.expiresAt < new Date()) {
+    if (!stored) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const accessToken = this.jwtService.sign(
-      { sub: stored.user.id, email: stored.user.email },
-      { expiresIn: env.JWT_ACCESS_EXPIRY },
-    );
-    const newRefreshTokenValue = randomBytes(40).toString('hex');
+    await this.refreshTokenStore.delete(refreshTokenValue);
 
-    await this.prisma.$transaction([
-      this.prisma.refreshToken.delete({ where: { id: stored.id } }),
-      this.prisma.refreshToken.create({
-        data: {
-          token: newRefreshTokenValue,
-          userId: stored.user.id,
-          expiresAt: new Date(Date.now() + ms(env.JWT_REFRESH_EXPIRY)),
-        },
-      }),
-    ]);
+    const payload: JwtPayload = { sub: stored.userId, email: stored.email };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: env.JWT_ACCESS_EXPIRY,
+    });
+
+    const newRefreshTokenValue = randomBytes(40).toString('hex');
+    await this.refreshTokenStore.set(
+      newRefreshTokenValue,
+      { userId: stored.userId, email: stored.email },
+      Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
+    );
 
     return { accessToken, refreshToken: newRefreshTokenValue };
   }
 
   async logout(userId: string, refreshTokenValue: string) {
-    await this.prisma.refreshToken.deleteMany({
-      where: { token: refreshTokenValue, userId },
-    });
+    const stored = await this.refreshTokenStore.get(refreshTokenValue);
+
+    if (stored && stored.userId === userId) {
+      await this.refreshTokenStore.delete(refreshTokenValue);
+    }
   }
 
   async verifyEmail(token: string) {
@@ -189,8 +193,9 @@ export class AuthService {
         data: { passwordHash },
       }),
       this.prisma.verificationToken.delete({ where: { id: stored.id } }),
-      this.prisma.refreshToken.deleteMany({ where: { userId: stored.userId } }),
     ]);
+
+    await this.refreshTokenStore.deleteAllForUser(stored.userId);
   }
 
   async getProfile(userId: string) {
@@ -213,19 +218,17 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, email: string) {
-    const accessToken = this.jwtService.sign(
-      { sub: userId, email },
-      { expiresIn: env.JWT_ACCESS_EXPIRY },
-    );
+    const payload: JwtPayload = { sub: userId, email };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: env.JWT_ACCESS_EXPIRY,
+    });
 
     const refreshTokenValue = randomBytes(40).toString('hex');
-    await this.prisma.refreshToken.create({
-      data: {
-        token: refreshTokenValue,
-        userId,
-        expiresAt: new Date(Date.now() + ms(env.JWT_REFRESH_EXPIRY)),
-      },
-    });
+    await this.refreshTokenStore.set(
+      refreshTokenValue,
+      { userId, email },
+      Math.floor(ms(env.JWT_REFRESH_EXPIRY) / 1000),
+    );
 
     return { accessToken, refreshToken: refreshTokenValue };
   }

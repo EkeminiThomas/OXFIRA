@@ -1,16 +1,25 @@
 import { Module, ValidationPipe } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { PrismaModule } from './prisma/prisma.module';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
+import { env } from './config/env';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    RedisModule,
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ({
+        throttlers: [{ ttl: 60_000, limit: 100 }],
+        storage: new ThrottlerStorageRedisService(env.REDIS_URL),
+      }),
+    }),
     PrismaModule,
     AuthModule,
   ],
