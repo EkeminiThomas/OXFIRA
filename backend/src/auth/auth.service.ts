@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomUUID } from 'crypto';
@@ -17,9 +17,13 @@ import {
   ValidationException,
 } from '../common/errors/exceptions';
 import { AccessTokenBlacklistStore } from '../redis/access-token-blacklist.store';
+import { generateOtp } from '../common/utils/otp.util';
+import { OTP_EXPIRY, OTP_MAX_ATTEMPTS } from './auth.constants';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -37,7 +41,8 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const verificationToken = randomBytes(32).toString('hex');
+    const otp = generateOtp();
+    const otpHash = await bcrypt.hash(otp, 12);
 
     const user = await this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
@@ -50,15 +55,19 @@ export class AuthService {
 
       await tx.verificationToken.create({
         data: {
-          token: verificationToken,
+          tokenHash: otpHash,
           userId: createdUser.id,
           type: VerificationTokenType.EMAIL_VERIFICATION,
-          expiresAt: new Date(Date.now() + ms('24h')),
+          expiresAt: new Date(Date.now() + ms(OTP_EXPIRY)),
         },
       });
 
       return createdUser;
     });
+
+    if (env.NODE_ENV !== 'production') {
+      this.logger.debug(`Email verification OTP for ${dto.email}: ${otp}`);
+    }
 
     const tokens = await this.generateTokens(user.id, user.email);
 
@@ -134,25 +143,44 @@ export class AuthService {
     }
   }
 
-  async verifyEmail(token: string) {
-    const stored = await this.prisma.verificationToken.findUnique({
-      where: { token },
-    });
-
-    if (
-      !stored ||
-      stored.expiresAt < new Date() ||
-      stored.type !== VerificationTokenType.EMAIL_VERIFICATION
-    ) {
-      throw new ValidationException('Invalid or expired verification token');
+  async verifyEmail(email: string, otp: string) {
+    const genericError = 'Invalid or expired verification code';
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new ValidationException(genericError);
     }
 
-    await this.prisma.user.update({
-      where: { id: stored.userId },
-      data: { isVerified: true },
+    const stored = await this.prisma.verificationToken.findUnique({
+      where: {
+        userId_type: { userId: user.id, type: VerificationTokenType.EMAIL_VERIFICATION },
+      },
     });
 
-    await this.prisma.verificationToken.delete({ where: { id: stored.id } });
+    if (!stored || stored.expiresAt < new Date()) {
+      throw new ValidationException(genericError);
+    }
+
+    if (stored.attempts >= OTP_MAX_ATTEMPTS) {
+      throw new ValidationException('Too many attempts. Please request a new code.');
+    }
+
+    const valid = await bcrypt.compare(otp, stored.tokenHash);
+    if (!valid) {
+      await this.prisma.verificationToken.update({
+        where: { id: stored.id },
+        data: { attempts: { increment: 1 } },
+      });
+
+      throw new ValidationException(genericError);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: stored.userId },
+        data: { isVerified: true },
+      }),
+      this.prisma.verificationToken.delete({ where: { id: stored.id } }),
+    ]);
   }
 
   async requestPasswordReset(email: string) {
@@ -160,28 +188,59 @@ export class AuthService {
 
     if (!user) { return; }
 
-    const resetToken = randomBytes(32).toString('hex');
-    await this.prisma.verificationToken.create({
-      data: {
-        token: resetToken,
+    const otp = generateOtp();
+    const otpHash = await bcrypt.hash(otp, 12);
+
+    await this.prisma.verificationToken.upsert({
+      where: {
+        userId_type: { userId: user.id, type: VerificationTokenType.PASSWORD_RESET },
+      },
+      create: {
+        tokenHash: otpHash,
         userId: user.id,
         type: VerificationTokenType.PASSWORD_RESET,
-        expiresAt: new Date(Date.now() + ms('1h')),
+        expiresAt: new Date(Date.now() + ms(OTP_EXPIRY)),
+      },
+      update: {
+        tokenHash: otpHash,
+        expiresAt: new Date(Date.now() + ms(OTP_EXPIRY)),
+        attempts: 0,
       },
     });
+    
+    if (env.NODE_ENV !== 'production') {
+      this.logger.debug(`Password reset OTP for ${email}: ${otp}`);
+    }
   }
 
-  async confirmPasswordReset(token: string, password: string) {
+  async confirmPasswordReset(email: string, otp: string, password: string) {
+    const genericError = 'Invalid or expired reset code';
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new ValidationException(genericError);
+    }
+
     const stored = await this.prisma.verificationToken.findUnique({
-      where: { token },
+      where: {
+        userId_type: { userId: user.id, type: VerificationTokenType.PASSWORD_RESET },
+      },
     });
 
-    if (
-      !stored ||
-      stored.expiresAt < new Date() ||
-      stored.type !== VerificationTokenType.PASSWORD_RESET
-    ) {
-      throw new ValidationException('Invalid or expired reset token');
+    if (!stored || stored.expiresAt < new Date()) {
+      throw new ValidationException(genericError);
+    }
+
+    if (stored.attempts >= OTP_MAX_ATTEMPTS) {
+      throw new ValidationException('Too many attempts. Please request a new code.');
+    }
+
+    const valid = await bcrypt.compare(otp, stored.tokenHash);
+    if (!valid) {
+      await this.prisma.verificationToken.update({
+        where: { id: stored.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new ValidationException(genericError);
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -231,4 +290,4 @@ export class AuthService {
 
     return { accessToken, refreshToken: refreshTokenValue };
   }
-}
+} 

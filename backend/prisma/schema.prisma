@@ -39,15 +39,16 @@ model User {
 
 model VerificationToken {
   id        String                @id @default(cuid())
-  token     String                @unique
+  tokenHash String
   userId    String
   user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      VerificationTokenType
+  attempts  Int                   @default(0)
   expiresAt DateTime
   createdAt DateTime              @default(now())
 
+  @@unique([userId, type])
   @@index([userId])
-  @@index([token])
 }
 
 model OAuthAccount {
