@@ -1,4 +1,10 @@
-import { IsEmail, IsString, Length, MinLength, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  Length,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class RequestResetDto {
@@ -12,7 +18,9 @@ export class ConfirmResetDto {
 
   @IsString()
   @Length(6, 6)
-  @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : String(value),
+  )
   otp!: string;
 
   @IsString()

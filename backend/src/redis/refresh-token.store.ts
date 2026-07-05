@@ -41,7 +41,9 @@ export class RefreshTokenStore {
 
     const result = refreshTokenPayloadSchema.safeParse(JSON.parse(raw));
     if (!result.success) {
-      this.logger.warn(`Currupted refresh token payload at key "${key} (discarding)`);
+      this.logger.warn(
+        `Currupted refresh token payload at key "${key} (discarding)`,
+      );
       await this.redis.del(key);
       return null;
     }
@@ -78,7 +80,7 @@ export class RefreshTokenStore {
       return;
     }
 
-    const pipeline = this.redis.pipeline()
+    const pipeline = this.redis.pipeline();
     for (const token of tokens) {
       const tokenKey = buildRedisKey(RedisKeyPrefix.REFRESH_TOKEN, token);
       pipeline.del(tokenKey);

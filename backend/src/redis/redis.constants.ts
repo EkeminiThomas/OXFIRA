@@ -6,6 +6,9 @@ export enum RedisKeyPrefix {
   ACCESS_TOKEN_BLACKLIST = 'blacklist-access',
 }
 
-export function buildRedisKey(prefix: RedisKeyPrefix, identifier: string): string {
+export function buildRedisKey(
+  prefix: RedisKeyPrefix,
+  identifier: string,
+): string {
   return `${prefix}:${identifier}`;
 }
