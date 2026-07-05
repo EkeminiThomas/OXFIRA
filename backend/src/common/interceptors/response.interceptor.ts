@@ -9,9 +9,10 @@ import { map } from 'rxjs/operators';
 import type { SuccessResponseBody } from '../responses/success-response.interface';
 
 @Injectable()
-export class ResponseInterceptor<T>
-  implements NestInterceptor<T, SuccessResponseBody<T>>
-{
+export class ResponseInterceptor<T> implements NestInterceptor<
+  T,
+  SuccessResponseBody<T>
+> {
   intercept(
     _context: ExecutionContext,
     next: CallHandler<T>,

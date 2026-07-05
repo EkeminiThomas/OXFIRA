@@ -13,7 +13,7 @@ import { AccessTokenBlacklistStore } from './access-token-blacklist.store';
       useFactory: () => new Redis(env.REDIS_URL),
     },
     RefreshTokenStore,
-    AccessTokenBlacklistStore
+    AccessTokenBlacklistStore,
   ],
   exports: [REDIS_CLIENT, RefreshTokenStore, AccessTokenBlacklistStore],
 })

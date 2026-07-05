@@ -7,7 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenStore } from '../redis/refresh-token.store';
 import { env } from '../config/env';
 import { VerificationTokenType } from '../../generated/prisma/enums';
-import { DecodedJwtPayload, JwtPayload } from './interfaces/jwt-payload.interface';
+import {
+  DecodedJwtPayload,
+  JwtPayload,
+} from './interfaces/jwt-payload.interface';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -136,10 +139,12 @@ export class AuthService {
       await this.refreshTokenStore.delete(refreshTokenValue);
     }
 
-    const decoded = this.jwtService.decode(accessToken) as DecodedJwtPayload | null;
+    const decoded: DecodedJwtPayload | null =
+      this.jwtService.decode(accessToken);
     if (decoded?.jti && decoded?.exp) {
       const ttlSeconds = decoded.exp - Math.floor(Date.now() / 1000);
-      await this.blacklistStore.blacklist(decoded.jti, ttlSeconds);
+      const jti: string = decoded.jti;
+      await this.blacklistStore.blacklist(jti, ttlSeconds);
     }
   }
 
@@ -152,7 +157,10 @@ export class AuthService {
 
     const stored = await this.prisma.verificationToken.findUnique({
       where: {
-        userId_type: { userId: user.id, type: VerificationTokenType.EMAIL_VERIFICATION },
+        userId_type: {
+          userId: user.id,
+          type: VerificationTokenType.EMAIL_VERIFICATION,
+        },
       },
     });
 
@@ -161,7 +169,9 @@ export class AuthService {
     }
 
     if (stored.attempts >= OTP_MAX_ATTEMPTS) {
-      throw new ValidationException('Too many attempts. Please request a new code.');
+      throw new ValidationException(
+        'Too many attempts. Please request a new code.',
+      );
     }
 
     const valid = await bcrypt.compare(otp, stored.tokenHash);
@@ -186,14 +196,19 @@ export class AuthService {
   async requestPasswordReset(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
 
-    if (!user) { return; }
+    if (!user) {
+      return;
+    }
 
     const otp = generateOtp();
     const otpHash = await bcrypt.hash(otp, 12);
 
     await this.prisma.verificationToken.upsert({
       where: {
-        userId_type: { userId: user.id, type: VerificationTokenType.PASSWORD_RESET },
+        userId_type: {
+          userId: user.id,
+          type: VerificationTokenType.PASSWORD_RESET,
+        },
       },
       create: {
         tokenHash: otpHash,
@@ -207,7 +222,7 @@ export class AuthService {
         attempts: 0,
       },
     });
-    
+
     if (env.NODE_ENV !== 'production') {
       this.logger.debug(`Password reset OTP for ${email}: ${otp}`);
     }
@@ -222,7 +237,10 @@ export class AuthService {
 
     const stored = await this.prisma.verificationToken.findUnique({
       where: {
-        userId_type: { userId: user.id, type: VerificationTokenType.PASSWORD_RESET },
+        userId_type: {
+          userId: user.id,
+          type: VerificationTokenType.PASSWORD_RESET,
+        },
       },
     });
 
@@ -231,7 +249,9 @@ export class AuthService {
     }
 
     if (stored.attempts >= OTP_MAX_ATTEMPTS) {
-      throw new ValidationException('Too many attempts. Please request a new code.');
+      throw new ValidationException(
+        'Too many attempts. Please request a new code.',
+      );
     }
 
     const valid = await bcrypt.compare(otp, stored.tokenHash);
@@ -290,4 +310,4 @@ export class AuthService {
 
     return { accessToken, refreshToken: refreshTokenValue };
   }
-} 
+}

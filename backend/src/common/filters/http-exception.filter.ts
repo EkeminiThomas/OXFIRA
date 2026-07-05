@@ -21,7 +21,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const body = this.buildErrorBody(exception);
     const status = this.resolveStatus(exception);
 
-    if (!(exception instanceof AppException) && !(exception instanceof HttpException)) {
+    if (
+      !(exception instanceof AppException) &&
+      !(exception instanceof HttpException)
+    ) {
       this.logger.error(
         exception instanceof Error ? exception.message : 'Unknown error',
         exception instanceof Error ? exception.stack : undefined,
@@ -66,13 +69,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       return {
         success: false,
-        error: { code: this.mapHttpStatusToCode(exception.getStatus()), message },
+        error: {
+          code: this.mapHttpStatusToCode(exception.getStatus()),
+          message,
+        },
       };
     }
 
     return {
       success: false,
-      error: { code: ErrorCode.INTERNAL_ERROR, message: 'Internal server error' },
+      error: {
+        code: ErrorCode.INTERNAL_ERROR,
+        message: 'Internal server error',
+      },
     };
   }
 

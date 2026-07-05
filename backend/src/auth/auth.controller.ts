@@ -65,7 +65,11 @@ export class AuthController {
   @Post('reset-password/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmReset(@Body() dto: ConfirmResetDto) {
-    await this.authService.confirmPasswordReset(dto.email, dto.otp, dto.password);
+    await this.authService.confirmPasswordReset(
+      dto.email,
+      dto.otp,
+      dto.password,
+    );
   }
 
   @Get('me')

@@ -7,6 +7,8 @@ export class VerifyEmailDto {
 
   @IsString()
   @Length(6, 6)
-  @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : String(value),
+  )
   otp!: string;
 }
