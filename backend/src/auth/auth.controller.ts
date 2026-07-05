@@ -53,7 +53,7 @@ export class AuthController {
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    await this.authService.verifyEmail(dto.token);
+    await this.authService.verifyEmail(dto.email, dto.otp);
   }
 
   @Post('reset-password')
@@ -65,7 +65,7 @@ export class AuthController {
   @Post('reset-password/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmReset(@Body() dto: ConfirmResetDto) {
-    await this.authService.confirmPasswordReset(dto.token, dto.password);
+    await this.authService.confirmPasswordReset(dto.email, dto.otp, dto.password);
   }
 
   @Get('me')

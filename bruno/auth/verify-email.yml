@@ -10,7 +10,8 @@ http:
     type: json
     data: |-
       {
-        "token": "{{verificationToken}}"
+        "email": "{{testEmail}}",
+        "token": "{{verificatinoToken}}"
       }
   auth: inherit
 

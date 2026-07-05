@@ -10,7 +10,8 @@ http:
     type: json
     data: |-
       {
-        "token": "{{resetToken}}",
+        "email": "{{testEmail}}",
+        "otp": "{{resetToken}}",
         "password": "NewPassword123!"
       }
   auth: inherit
