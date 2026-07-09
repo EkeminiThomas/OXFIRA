@@ -90,8 +90,8 @@ export default function Features() {
             {/* Section 4 — CTA buttons */}
             <section className="flex flex-col sm:flex-row justify-evenly items-center gap-4 mt-10 mx-0  my-10 sm:mx-10">
                 <Button text='Connect' className="w-full sm:w-35 rounded-lg" />
-                <Button text='Share'   className="w-full sm:w-35 rounded-lg" />
-                <Button text='Belong'  className="w-full sm:w-35 rounded-lg" />
+                <Button text='Share' className="w-full sm:w-35 rounded-lg" />
+                <Button text='Belong' className="w-full sm:w-35 rounded-lg" />
             </section>
 
         </div>

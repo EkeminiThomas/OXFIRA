@@ -1,32 +1,54 @@
-
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import { FcGoogle } from "react-icons/fc";
 import { RiFacebookFill, RiInstagramLine } from "react-icons/ri";
 import { SiPinterest } from "react-icons/si";
+
 
 const testimonial = {
   quote:
     "Swipe Social is a game-changer! It simplifies scheduling and design, saving me time and letting me focus on quality content. A must-have for digital marketers!",
   name: "Thomson Phillip",
   role: "Content Creator",
-  avatar: "/avatar.png", // replace with your actual image path
+  avatar: "/avatar.png",
 };
 
-const page = () => {
+const Page = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("")
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const {
+    isLoading,
+    loginWithGoogle,
+    loginWithFacebook,
+    loginWithCredentials, // added below in useAuth
+  } = useAuth();
+
+  const handleLogin = async () => {
+    setError(null);
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+    const result = await loginWithCredentials(email, password);
+    if (result?.error) {
+      setError("Invalid email or password.");
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-white overflow-hidden">
-
       {/* ── Left panel ── */}
       <div className="relative hidden md:flex w-[45%] items-center justify-center bg-white overflow-hidden">
-        {/* Large dark-blue circle anchored to the left */}
         <div
           className="absolute"
           style={{
@@ -40,9 +62,7 @@ const page = () => {
           }}
         />
 
-        {/* Testimonial card */}
         <div className="relative z-10 mx-auto w-72">
-          {/* Quote bubble icon */}
           <div className="flex justify-center mb-4">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
               <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
@@ -54,15 +74,12 @@ const page = () => {
             </div>
           </div>
 
-          {/* Card with dashed border */}
           <div className="border border-dashed border-blue-300/60 rounded-xl p-5">
             <p className="text-white font-bold text-[15px] leading-snug">
               {testimonial.quote}
             </p>
-
             <div className="flex items-center gap-3 mt-5">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-white/30 shrink-0">
-                {/* Replace with actual avatar */}
                 <div className="w-full h-full bg-gray-300 rounded-full" />
               </div>
               <div>
@@ -80,7 +97,12 @@ const page = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Log in</h1>
           <p className="text-gray-500 text-sm mb-8">Welcome back!</p>
 
-          {/* Email */}
+          {error && (
+            <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              {error}
+            </div>
+          )}
+
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               E-mail
@@ -89,12 +111,10 @@ const page = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder=""
               className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
 
-          {/* Password */}
           <div className="mb-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -116,7 +136,6 @@ const page = () => {
             </div>
           </div>
 
-          {/* Forgot password */}
           <div className="text-right mb-6">
             <Link
               href="/forgot-password"
@@ -126,53 +145,57 @@ const page = () => {
             </Link>
           </div>
 
-          {/* Log in button */}
           <button
             type="button"
-            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 rounded-full transition-colors duration-150"
+            onClick={handleLogin}
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-full transition-colors duration-150"
           >
-            Log in
+            {isLoading ? "Logging in..." : "Log in"}
           </button>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400 whitespace-nowrap">Or login with</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* Social icons */}
           <div className="flex justify-center gap-4">
             {[
               {
                 label: "Google",
                 icon: <FcGoogle size={22} />,
+                onClick: loginWithGoogle,
               },
               {
                 label: "Facebook",
                 icon: <RiFacebookFill size={22} className="text-blue-600" />,
+                onClick: loginWithFacebook,
               },
               {
                 label: "Instagram",
                 icon: <RiInstagramLine size={22} className="text-pink-500" />,
+                onClick: () => setError("Instagram login isn't supported yet."),
               },
               {
                 label: "Pinterest",
                 icon: <SiPinterest size={22} className="text-red-600" />,
+                onClick: () => setError("Pinterest login isn't supported yet."),
               },
-            ].map(({ label, icon }) => (
+            ].map(({ label, icon, onClick }) => (
               <button
                 key={label}
                 type="button"
                 aria-label={`Login with ${label}`}
-                className="w-12 h-12 flex items-center justify-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition"
+                onClick={onClick}
+                disabled={isLoading}
+                className="w-12 h-12 flex items-center justify-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition disabled:opacity-60"
               >
                 {icon}
               </button>
             ))}
           </div>
 
-          {/* Sign up link */}
           <p className="text-center text-sm text-gray-500 mt-8">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="text-blue-600 font-medium hover:underline">
@@ -182,7 +205,11 @@ const page = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default Page;
+
+function useAuth(): { isLoading: any; loginWithGoogle: any; loginWithFacebook: any; loginWithCredentials: any; } {
+  throw new Error("Function not implemented.");
+}

@@ -1,0 +1,38 @@
+export const recentPosts = [
+    {
+        id: 1,
+        image: "/images/headphones.jpg",
+        likes: "99+",
+        comments: 20,
+        shares: 10,
+        bookmarks: 15,
+        caption: "Checkout our latest collections.",
+    },
+    {
+        id: 2,
+        image: "/images/headphones.jpg",
+        likes: "99+",
+        comments: 20,
+        shares: 10,
+        bookmarks: 15,
+        caption: "Checkout our latest collections.",
+    },
+    {
+        id: 3,
+        image: "/images/headphones.jpg",
+        likes: "99+",
+        comments: 20,
+        shares: 10,
+        bookmarks: 15,
+        caption: "Checkout our latest collections.",
+    },
+    {
+        id: 4,
+        image: "/images/headphones.jpg",
+        likes: "99+",
+        comments: 20,
+        shares: 10,
+        bookmarks: 15,
+        caption: "Checkout our latest collections.",
+    },
+];

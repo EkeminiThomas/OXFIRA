@@ -1,13 +1,16 @@
-import SideBar from "@/components/shared/SideBar";
+import SidebarContainer from "@/components/containers/SideBarContainer";
+import DashNavbar from "@/components/DashNavbar";
+
 
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
     return (
-        <div className="flex ">
+        <div >
+            <DashNavbar />
 
-            <SideBar />
-            <div>
-                <section>Dashboard navbar</section>
+            <div className="flex">
+                <SidebarContainer />
+
                 {children}
             </div>
 
