@@ -4,6 +4,8 @@
 import {
   LayoutDashboard, Users, BarChart2,
   FileText, Calendar, Bell, Settings, LogOut,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -12,13 +14,12 @@ import Sidebar from "../layouts/Sidebar";
 import { usePermission } from "@/app/hooks/usePermission";
 
 const NAV_ITEMS = [
-  { label: "Dashboard",     href: "/dashboard",     icon: LayoutDashboard },
-  { label: "Users",         href: "/users",          icon: Users           },
-   { label: "Calendar",      href: "/calendar",       icon: Calendar        },
-  { label: "Analytics",     href: "/analytics",      icon: BarChart2       },
-  { label: "Reports",       href: "/reports",        icon: FileText        },
- 
-  { label: "Notifications", href: "/notifications",  icon: Bell            },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Posts", href: "/posts", icon: FileText },
+  { label: "Schedule", href: "/schedule", icon: Calendar },
+  { label: "Analytics", href: "/analytics", icon: BarChart2 },
+  { label: "Engagements", href: "/engagements", icon: MessageCircle },
+  { label: "Help", href: "/help", icon: HelpCircle },
 ];
 
 const BOTTOM_ITEMS = [
@@ -26,7 +27,7 @@ const BOTTOM_ITEMS = [
 ];
 
 export default function SidebarContainer() {
-  const router   = useRouter();
+  const router = useRouter();
   const canSeeUsers = usePermission("users:read");
 
   const filteredNav = NAV_ITEMS.filter((item) => {
