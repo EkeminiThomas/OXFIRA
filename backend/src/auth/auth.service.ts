@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomUUID } from 'crypto';
@@ -22,6 +22,11 @@ import {
 import { AccessTokenBlacklistStore } from '../redis/access-token-blacklist.store';
 import { generateOtp } from '../common/utils/otp.util';
 import { OTP_EXPIRY, OTP_MAX_ATTEMPTS } from './auth.constants';
+import {
+  EMAIL_SERVICE,
+  type EmailService,
+  OtpPurpose,
+} from '../email/interfaces/email-service.interface';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +37,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly blacklistStore: AccessTokenBlacklistStore,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -68,9 +74,11 @@ export class AuthService {
       return createdUser;
     });
 
-    if (env.NODE_ENV !== 'production') {
-      this.logger.debug(`Email verification OTP for ${dto.email}: ${otp}`);
-    }
+    await this.emailService.sendOtpEmail(
+      dto.email,
+      otp,
+      OtpPurpose.EMAIL_VERIFICATION,
+    );
 
     const tokens = await this.generateTokens(user.id, user.email);
 
@@ -223,9 +231,7 @@ export class AuthService {
       },
     });
 
-    if (env.NODE_ENV !== 'production') {
-      this.logger.debug(`Password reset OTP for ${email}: ${otp}`);
-    }
+    await this.emailService.sendOtpEmail(email, otp, OtpPurpose.PASSWORD_RESET);
   }
 
   async confirmPasswordReset(email: string, otp: string, password: string) {

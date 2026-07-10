@@ -3,7 +3,7 @@ variables:
   - name: baseUrl
     value: http://localhost:3000
   - name: testEmail
-    value: testuser@oxfira.dev
+    value: covenantekojoe@gmail.com
   - name: testPassword
     value: TestPassword123!
   - secret: true
