@@ -40,6 +40,13 @@ const envSchema = z
     ZEPTOMAIL_TOKEN: z.string().optional(),
     EMAIL_FROM_ADDRESS: z.email().default('noreply@localhost.dev'),
     EMAIL_FROM_NAME: z.string().default('OXFIRA'),
+
+    // Google OAuth config
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_CALLBACK_URL: z
+      .url()
+      .default('http://localhost:3000/api/auth/google/callback'),
   })
   .refine(
     (cfg) => cfg.EMAIL_PROVIDER !== 'zeptomail' || !!cfg.ZEPTOMAIL_TOKEN,

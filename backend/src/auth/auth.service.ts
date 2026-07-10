@@ -6,7 +6,10 @@ import ms from 'ms';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenStore } from '../redis/refresh-token.store';
 import { env } from '../config/env';
-import { VerificationTokenType } from '../../generated/prisma/enums';
+import {
+  OAuthProvider,
+  VerificationTokenType,
+} from '../../generated/prisma/enums';
 import {
   DecodedJwtPayload,
   JwtPayload,
@@ -27,6 +30,7 @@ import {
   type EmailService,
   OtpPurpose,
 } from '../email/interfaces/email-service.interface';
+import { GoogleProfile } from './interfaces/google-profile.interface';
 
 @Injectable()
 export class AuthService {
@@ -82,14 +86,7 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email);
 
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-      },
-      ...tokens,
-    };
+    return this.buildAuthResponse(user, tokens);
   }
 
   async login(dto: LoginDto) {
@@ -115,14 +112,7 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email);
 
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-      },
-      ...tokens,
-    };
+    return this.buildAuthResponse(user, tokens);
   }
 
   async refreshToken(refreshTokenValue: string) {
@@ -315,5 +305,99 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken: refreshTokenValue };
+  }
+
+  async loginWithGoogle(profile: GoogleProfile) {
+    if (!profile.email) {
+      throw new UnauthorizedException('Google account has no email address');
+    }
+
+    // 1. Existing OAuth link? Just log them in.
+    const existingOAuth = await this.prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: OAuthProvider.GOOGLE,
+          providerUserId: profile.providerUserId,
+        },
+      },
+      include: { user: true },
+    });
+
+    if (existingOAuth) {
+      const tokens = await this.generateTokens(
+        existingOAuth.user.id,
+        existingOAuth.user.email,
+      );
+
+      return this.buildAuthResponse(existingOAuth.user, tokens);
+    }
+
+    // 2. No link yet. Does a user with this email already exist?
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: profile.email },
+    });
+
+    if (existingUser) {
+      if (!profile.emailVerified) {
+        throw new UnauthorizedException(
+          'This email is not verified with Google. Please log in with your password.',
+        );
+      }
+
+      await this.prisma.oAuthAccount.create({
+        data: {
+          provider: OAuthProvider.GOOGLE,
+          providerUserId: profile.providerUserId,
+          userId: existingUser.id,
+        },
+      });
+
+      const tokens = await this.generateTokens(
+        existingUser.id,
+        existingUser.email,
+      );
+      return this.buildAuthResponse(existingUser, tokens);
+    }
+
+    // 3. Brand new user via Google
+    if (!profile.emailVerified) {
+      throw new UnauthorizedException(
+        'This email is not verified with Google. Please register with email and password.',
+      );
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email: profile.email,
+          passwordHash: null,
+          displayName: profile.displayName,
+          isVerified: true,
+        },
+      });
+
+      await tx.oAuthAccount.create({
+        data: {
+          provider: OAuthProvider.GOOGLE,
+          providerUserId: profile.providerUserId,
+          userId: createdUser.id,
+        },
+      });
+
+      return createdUser;
+    });
+
+    const tokens = await this.generateTokens(user.id, user.email);
+    return this.buildAuthResponse(user, tokens);
+  }
+
+  private buildAuthResponse(
+    user: { id: string; email: string; displayName: string | null },
+    tokens: { accessToken: string; refreshToken: string },
+  ) {
+    return {
+      user: { id: user.id, email: user.email, displayName: user.displayName },
+      ...tokens,
+    };
   }
 }
