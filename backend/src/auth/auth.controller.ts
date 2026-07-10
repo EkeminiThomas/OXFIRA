@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -16,6 +17,8 @@ import { RequestResetDto, ConfirmResetDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { type GoogleAuthRequest } from './interfaces/authenticated-request.interface';
 
 @Controller('api/auth')
 export class AuthController {
@@ -30,6 +33,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: GoogleAuthRequest) {
+    const profile = req.user;
+    return this.authService.loginWithGoogle(profile);
   }
 
   @Post('refresh')
