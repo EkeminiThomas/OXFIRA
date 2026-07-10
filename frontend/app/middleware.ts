@@ -1,6 +1,6 @@
 
 import { cookies } from "next/headers";
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 
 const protectedRoutes = ['/dashboard']
@@ -12,9 +12,19 @@ export default async function middleware(req:NextRequest) {
 
     //get the session from the cookie to decide what the user can access
 
-const cookie = cookies().get('session')?.value;
+const cookie = await cookies().get('session')?.value;
 
 const session = await decrypt(cookie);
+if (isProtectedRoute && !session?.userId ){
+    return NextResponse.redirect('/login');
+
+}
+
+if (isPublicRoute && session?.userId){
+     return NextResponse.redirect('/dashboard');
+}
   
+
+return NextResponse.next();
 }
 
