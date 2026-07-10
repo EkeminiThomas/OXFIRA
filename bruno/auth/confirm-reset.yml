@@ -1,0 +1,23 @@
+info:
+  name: Confirm Password Reset
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/reset-password/confirm"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{testEmail}}",
+        "otp": "{{resetToken}}",
+        "password": "NewPassword123!"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

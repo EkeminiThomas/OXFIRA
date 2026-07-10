@@ -1,0 +1,16 @@
+name: Local
+variables:
+  - name: baseUrl
+    value: http://localhost:3000
+  - name: testEmail
+    value: covenantekojoe@gmail.com
+  - name: testPassword
+    value: TestPassword123!
+  - secret: true
+    name: accessToken
+  - secret: true
+    name: refreshToken
+  - name: verificationToken
+    value: ""
+  - name: resetToken
+    value: ""
