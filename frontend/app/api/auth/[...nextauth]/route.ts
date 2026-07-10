@@ -3,7 +3,9 @@ import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import TwitterProvider from "next-auth/providers/twitter";
 
-const handler = NextAuth({
+
+export const authOptions = {
+    // Configure one or more authentication providers
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -27,6 +29,5 @@ const handler = NextAuth({
     //         return session;
     //     },
     // },
-});
-
-export { handler as GET, handler as POST };
+}
+export default NextAuth(authOptions)

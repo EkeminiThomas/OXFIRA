@@ -2,8 +2,8 @@
 "use client";
 
 import {
-  LayoutDashboard, Users, BarChart2,
-  FileText, Calendar, Bell, Settings, LogOut,
+  LayoutDashboard, BarChart2,
+  FileText, Calendar, Settings,
   HelpCircle,
   MessageCircle,
 } from "lucide-react";
@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 
 
 import Sidebar from "../layouts/Sidebar";
-import { usePermission } from "@/app/hooks/usePermission";
+
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -28,12 +28,9 @@ const BOTTOM_ITEMS = [
 
 export default function SidebarContainer() {
   const router = useRouter();
-  const canSeeUsers = usePermission("users:read");
 
-  const filteredNav = NAV_ITEMS.filter((item) => {
-    if (item.href === "/users") return canSeeUsers;
-    return true;
-  });
+
+ 
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -42,7 +39,7 @@ export default function SidebarContainer() {
 
   return (
     <Sidebar
-      navItems={filteredNav}
+      navItems={NAV_ITEMS}
       bottomItems={BOTTOM_ITEMS}
       onLogout={handleLogout}
     />
