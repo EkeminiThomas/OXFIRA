@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { env } from './config/env';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { env } from './config/env';
       }),
     }),
     PrismaModule,
+    EmailModule,
     AuthModule,
   ],
   controllers: [],
