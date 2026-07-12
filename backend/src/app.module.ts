@@ -9,6 +9,7 @@ import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { env } from './config/env';
 import { EmailModule } from './email/email.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { EmailModule } from './email/email.module';
         storage: new ThrottlerStorageRedisService(env.REDIS_URL),
       }),
     }),
+    HealthModule,
     PrismaModule,
     EmailModule,
     AuthModule,
