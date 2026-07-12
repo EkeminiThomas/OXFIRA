@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -16,7 +17,11 @@ import { RequestResetDto, ConfirmResetDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { type GoogleAuthRequest } from './interfaces/authenticated-request.interface';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -32,6 +37,17 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: GoogleAuthRequest) {
+    const profile = req.user;
+    return this.authService.loginWithGoogle(profile);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() dto: RefreshTokenDto) {
@@ -39,6 +55,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -73,6 +90,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser('id') userId: string) {
     return this.authService.getProfile(userId);
