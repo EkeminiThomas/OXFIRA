@@ -1,4 +1,4 @@
-import { scheduledPosts } from "@/app/data/SchedulePost"
+import { scheduledPosts } from "@/data/SchedulePost"
 
 export default function SchedulePost() {
     return (

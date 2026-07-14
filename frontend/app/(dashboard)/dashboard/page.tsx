@@ -9,7 +9,7 @@ export default function Dashboard() {
     return (
         <div className="w-full min-h-screen">
             <div className="w-full flex flex-col mt-4 p-4 gap-4">
-                <div className="w-full flex flex-col lg:flex-row lg:justify-between outline outline-red-400 rounded-lg p-4 gap-4">
+                <div className="w-full flex flex-col lg:flex-row lg:justify-between  gap-4">
                     {/* FIX: stacks vertically on mobile/tablet (flex-col), switches to
                         side-by-side only at "lg" breakpoint (1024px) and up */}
 

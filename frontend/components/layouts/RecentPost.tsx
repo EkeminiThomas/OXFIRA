@@ -1,5 +1,5 @@
 import { FaRegHeart, FaRegComment, FaRetweet, FaRegBookmark } from "react-icons/fa";
-import { recentPosts } from "@/app/data/RecentPost";
+import { recentPosts } from "@/data/RecentPost";
 export default function RecentPost() {
     return (
         <div className="w-full">

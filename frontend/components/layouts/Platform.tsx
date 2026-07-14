@@ -25,7 +25,7 @@ export default function Plaform() {
     return (
         <div className="w-full">
             <h1 className="font-bold">Platforms</h1>
-            <div className="flex flex-col gap-3 outline">
+            <div className="flex flex-col gap-3 ">
                 {socialHandles.map(({ platform, handle, icon: Icon, color }) => (
                     <div
                         key={platform}

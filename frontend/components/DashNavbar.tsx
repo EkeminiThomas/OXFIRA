@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import SearchBar from "./shared/SearchBar";
 
-import { TopNavProps } from "@/app/types/nav";
+import { TopNavProps } from "@/types/nav";
 
 export default function DashNavbar({ userName, userRole, avatarUrl }: TopNavProps) {
   return (
