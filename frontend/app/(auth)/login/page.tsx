@@ -23,7 +23,7 @@ const Page = () => {
 
   // SRP: all API-consuming logic lives inside this hook, NOT in this component.
   // This component's only job is to render inputs and hand their values to the hook.
-  const { email, setEmail, password, setPassword, error, isLoading, handleLogin } = useLogin();
+  const { email, setEmail, password, setPassword, error, loading, handleLogin } = useLogin();
 
   return (
     <div className="min-h-screen flex bg-white overflow-hidden">
@@ -123,10 +123,10 @@ const Page = () => {
           <button
             type="button"
             onClick={handleLogin}
-            disabled={isLoading}
+            disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-full transition-colors duration-150"
           >
-            {isLoading ? "Logging in..." : "Log in"}
+            {loading ? "Logging in..." : "Log in"}
           </button>
 
           {/* Divider */}

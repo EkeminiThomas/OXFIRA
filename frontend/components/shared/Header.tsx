@@ -1,8 +1,9 @@
 'use client'
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { RiArrowRightLine, RiCloseLine, RiLayoutGridLine, RiMenu2Line } from 'react-icons/ri';
+
 
 const NavLinks = [
     { Name: 'Platform', link: '/platform' },

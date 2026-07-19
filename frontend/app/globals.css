@@ -10,33 +10,31 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --background-image-corner-gradient: radial-gradient(
-    circle at top left,
-    #5779E5 0%,
-    #2D57DE 40%,
-    #1B3485 70%,
-    #122359 100%
-  );
+  --background-image-corner-gradient: radial-gradient(circle at top left,
+      #5779E5 0%,
+      #2D57DE 40%,
+      #1B3485 70%,
+      #122359 100%);
 
   /* ── Oxfira palette ── */
 
   /* 60% — Gray (dominant surfaces) */
-  --color-gray-50:  #f9f9f8;
+  --color-gray-50: #f9f9f8;
   --color-gray-100: #f2f1ef;
   --color-gray-200: #e5e3df;
   --color-gray-300: #d0cdc8;
   --color-gray-400: #b4b2a9;
   --color-gray-500: #888780;
   --color-gray-600: #5e5d57;
-
+  --color-txt-gray:#6D6E6F;
   /* 30% — Deep navy (text, footer, contrast bands) */
   --color-navy-950: #050916;
   --color-navy-900: #09112c;
-  --color-text-hue:#000789;
+  --color-text-hue: #000789;
 
   /* 10% — Blue accent (buttons, links, highlights only) */
   --color-blue-brand: #1b3485;
-  --color-blue-soft:  #6a8fe8;
+  --color-blue-soft: #6a8fe8;
 }
 
 @media (prefers-color-scheme: dark) {

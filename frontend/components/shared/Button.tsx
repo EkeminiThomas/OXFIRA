@@ -13,8 +13,9 @@ interface ButtonProps {
 export default function Button({ text, onClick, icon, className }: ButtonProps) {
     return (
         <div onClick={onClick} className={cn("bg-text-hue flex px-8 py-3 text-xl text-white rounded-3xl mx-6 cursor-pointer", className)} >
-            {text}
             {icon}
+            {text}
+
         </div>
     )
 }

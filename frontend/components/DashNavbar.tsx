@@ -3,15 +3,16 @@ import Image from 'next/image'
 import {
   Bell,
   ChevronDown,
+  CirclePlus,
   Menu,
   Plus,
   Search,
 } from "lucide-react";
 import SearchBar from "./shared/SearchBar";
+import Button from './shared/Button';
+import { FaPlusCircle } from 'react-icons/fa';
 
-import { TopNavProps } from "@/types/nav";
-
-export default function DashNavbar({ userName, userRole, avatarUrl }: TopNavProps) {
+export default function DashNavbar() {
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
       <div className="flex items-center gap-2">
@@ -22,31 +23,26 @@ export default function DashNavbar({ userName, userRole, avatarUrl }: TopNavProp
       <SearchBar />
 
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={16} />
-          New post
-        </button>
-        <button type="button" aria-label="Notifications" className="text-gray-400 hover:text-gray-600">
-          <Bell size={20} />
-        </button>
+        <Button
+          icon={<CirclePlus color="#ffffff" />}
+          text="New Post"
+          className="flex items-center gap-2 bg-text-hue text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        />
         <div className="flex items-center gap-2">
+          <Bell size={20} className='md:flex' />
           <Image
-            src={avatarUrl}
-            alt={userName}
+            src='/HeroIcon'
+            alt="user icon"
             width={36}
             height={36}
             className="rounded-full object-cover"
           />
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">{userName}</span>
-            <span className="text-xs text-gray-400">{userRole}</span>
+            <span className="text-[12px] font-semibold"> Omage Prosper </span>
+            <span className="text-[9px] text-gray-400">Manager</span>
           </div>
         </div>
       </div>
     </header>
-
   );
 }

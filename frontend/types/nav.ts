@@ -1,6 +1,6 @@
 
 export type TopNavProps = {
-  userName: string;
-  userRole: string;
-  avatarUrl: string;
+  userName?: string;
+  userRole?: string;
+  avatarUrl?: string;
 };
